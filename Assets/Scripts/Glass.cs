@@ -2,6 +2,18 @@
 
 public class GlassCarryManager : MonoBehaviour
 {
+    [Header("Glass Height Control")]
+    [Tooltip("How fast the glass moves up/down when players press the raise/lower keys.")]
+    public float glassRaiseSpeed = 1.5f;
+    [Tooltip("How far up the glass can go above its base height.")]
+    public float maxRaiseHeight = 1.5f;
+    [Tooltip("How far down the glass can go below its base height.")]
+    public float maxLowerHeight = 0.8f;
+    [Tooltip("How quickly the glass returns to base height when nobody is pressing.")]
+    public float heightReturnSpeed = 2f;
+    private float currentHeightOffset = 0f;
+    private float raiseInputA = 0f;
+    private float raiseInputB = 0f;
     [Header("Players")]
     public Transform playerA;
     public Transform playerB;
@@ -69,6 +81,33 @@ public class GlassCarryManager : MonoBehaviour
     private int startupFrames = 0;
     private const int StartupGraceFrames = 3;
 
+    /// <summary>Player A calls this every frame with their raise/lower input.</summary>
+    public void SetRaiseInputA(float input) { raiseInputA = Mathf.Clamp(input, -1f, 1f); }
+
+    /// <summary>Player B calls this every frame with their raise/lower input.</summary>
+    public void SetRaiseInputB(float input) { raiseInputB = Mathf.Clamp(input, -1f, 1f); }
+
+    void UpdateHeightControl()
+    {
+        // Option B: summed input, clamped so one player can't exceed max speed
+        float combined = raiseInputA + raiseInputB;
+        combined = Mathf.Clamp(combined, -1f, 1f);
+
+        if (Mathf.Abs(combined) > 0.01f)
+        {
+            currentHeightOffset += combined * glassRaiseSpeed * Time.deltaTime;
+        }
+        else
+        {
+            // Nobody pressing — drift back to base height
+            currentHeightOffset = Mathf.MoveTowards(
+                currentHeightOffset, 0f, heightReturnSpeed * Time.deltaTime);
+        }
+
+        currentHeightOffset = Mathf.Clamp(currentHeightOffset, -maxLowerHeight, maxRaiseHeight);
+    }
+
+
     void Start()
     {
         if (playerA == null || playerB == null || glass == null) return;
@@ -81,23 +120,14 @@ public class GlassCarryManager : MonoBehaviour
         if (isBroken || playerA == null || playerB == null || glass == null)
             return;
 
+        UpdateHeightControl();   // <-- ADD THIS LINE
+
         if (Time.deltaTime > 0f)
             estimatedGlassVelocity = (glass.position - previousGlassPos) / Time.deltaTime;
 
-        // Remember where the glass was before moving
         Vector3 positionBeforeMove = glass.position;
-
-        // 1. FIRST check for hazards along the path the glass is ABOUT to move
-        //    This catches contact the instant it would happen
-        CheckHazardsAlongPath(positionBeforeMove, ComputeNextGlassPosition());
-
-        // If a hazard broke the glass, stop here
-        if (isBroken) return;
-
-        // 2. Now actually move the glass
         AlignGlassBetweenPlayers();
-
-        // 3. Second check: did the glass end up touching a hazard?
+        CheckHazardsAlongPath(positionBeforeMove, glass.position);
         CheckHazardsAtPoint(glass.position);
 
         if (isBroken) return;
@@ -251,7 +281,7 @@ public class GlassCarryManager : MonoBehaviour
     {
         Vector3 midpoint = (playerA.position + playerB.position) * 0.5f;
         float baseY = (playerA.position.y + playerB.position.y) * 0.5f;
-        midpoint.y = baseY + carryHeightOffset;
+        midpoint.y = baseY + carryHeightOffset + currentHeightOffset;
 
         Vector3 avgFacing = (playerA.forward + playerB.forward).normalized;
         avgFacing.y = 0f;
@@ -280,7 +310,7 @@ public class GlassCarryManager : MonoBehaviour
     {
         Vector3 midpoint = (playerA.position + playerB.position) * 0.5f;
         float baseY = (playerA.position.y + playerB.position.y) * 0.5f;
-        midpoint.y = baseY + carryHeightOffset;
+        midpoint.y = baseY + carryHeightOffset + currentHeightOffset;
 
         Vector3 avgFacing = (playerA.forward + playerB.forward).normalized;
         avgFacing.y = 0f;

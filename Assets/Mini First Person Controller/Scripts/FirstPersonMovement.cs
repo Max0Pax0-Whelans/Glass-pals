@@ -6,6 +6,13 @@ public enum InputScheme { WASD, ArrowKeys }
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : MonoBehaviour
 {
+    [Header("Glass Height Input")]
+    [Tooltip("Key to raise the glass.")]
+    public KeyCode raiseKey = KeyCode.Q;
+    [Tooltip("Key to lower the glass.")]
+    public KeyCode lowerKey = KeyCode.E;
+    [Tooltip("Reference to the glass manager.")]
+    public GlassCarryManager glassManager;
     [Header("Input")]
     public InputScheme inputScheme = InputScheme.WASD;
 
@@ -30,6 +37,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        // --- Existing movement input ---
         float h = 0f, v = 0f;
 
         if (inputScheme == InputScheme.WASD)
@@ -51,6 +59,19 @@ public class PlayerMovement : MonoBehaviour
 
         inputVector = new Vector2(h, v);
         if (inputVector.sqrMagnitude > 1f) inputVector.Normalize();
+
+        // --- ADD THIS: Raise/lower glass input ---
+        if (glassManager != null)
+        {
+            float raiseInput = 0f;
+            if (Input.GetKey(raiseKey)) raiseInput += 1f;
+            if (Input.GetKey(lowerKey)) raiseInput -= 1f;
+
+            if (inputScheme == InputScheme.WASD)
+                glassManager.SetRaiseInputA(raiseInput);
+            else
+                glassManager.SetRaiseInputB(raiseInput);
+        }
     }
 
     void FixedUpdate()
