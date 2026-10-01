@@ -583,6 +583,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97fca36bd81de7c4cafce7bbf02ca611, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
+  raiseKey: 113
+  lowerKey: 101
+  glassManager: {fileID: 0}
   inputScheme: 1
   speed: 5
   runSpeed: 9
@@ -1073,11 +1076,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf44d02d3bbf7454e9b02837ffb775c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GlassCarryManager
+  glassRaiseSpeed: 1.5
+  maxRaiseHeight: 1.5
+  maxLowerHeight: 0.8
+  heightReturnSpeed: 2
   playerA: {fileID: 869447598}
   playerB: {fileID: 701524001}
-  glassFollowSpeed: 6
-  glassRotateSpeed: 8
-  glassDeadZone: 0.02
+  maxSlotSpread: 2.5
   glass: {fileID: 811670750}
   carryHeightOffset: 1.25
   forwardOffset: 0.4
@@ -1091,6 +1096,10 @@ MonoBehaviour:
   stress: 0
   stressDecay: 15
   stressLimit: 160.7
+  glassFollowSpeed: 6
+  glassRotateSpeed: 8
+  glassDeadZone: 0.02
+  maxGlassTilt: 45
   shatterPrefab: {fileID: 8268784267270607654, guid: 996fbc60d4137bc48a568e376efba680, type: 3}
   shatterLifetime: 5
   breakParticles: {fileID: 0}
@@ -1098,8 +1107,11 @@ MonoBehaviour:
   momentumTransfer: 1
   explosionForce: 150
   explosionRadius: 3
-  maxGlassTilt: 45
-  rotationSmoothSpeed: 15
+  explosionUpwardModifier: 0.5
+  hazardLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  hazardCastRadius: 0.1
 --- !u!4 &1259994692
 Transform:
   m_ObjectHideFlags: 0

@@ -18,6 +18,10 @@ public class GlassCarryManager : MonoBehaviour
     public Transform playerA;
     public Transform playerB;
 
+    [Header("Slot Constraint")]
+    [Tooltip("Maximum half-length the slot positions can spread to. Prevents runaway feedback.")]
+    public float maxSlotSpread = 2.5f;
+
     [Header("Glass")]
     public Transform glass;
     public float carryHeightOffset = 1.1f;
@@ -232,9 +236,15 @@ public class GlassCarryManager : MonoBehaviour
     // ---------- Slot constraint ----------
     Vector3 GetSlotWorldPosition(float slotT)
     {
-        if (glass == null) return Vector3.zero;
-        float halfLength = glass.localScale.x * 0.5f;
-        return glass.position + glass.right * (slotT * halfLength);
+        // Base the slot on the actual distance between players, not the glass scale
+        float actualDistance = Vector3.Distance(
+            new Vector3(playerA.position.x, 0, playerA.position.z),
+            new Vector3(playerB.position.x, 0, playerB.position.z));
+
+        // Use a capped distance so an extreme stretch doesn't push players further
+        float slotHalfLength = Mathf.Min(actualDistance, maxSlotSpread) * 0.5f;
+
+        return glass.position + glass.right * (slotT * slotHalfLength);
     }
 
     void ApplySlotConstraint(Transform player, float slotT)
@@ -298,7 +308,7 @@ public class GlassCarryManager : MonoBehaviour
             Vector3 right = direction.normalized;
             Vector3 forward = Vector3.Cross(right, Vector3.up).normalized;
             Vector3 up = Vector3.Cross(forward, right).normalized;
-            glass.rotation = Quaternion.LookRotation(forward, up) * Quaternion.Euler(0f, 90f, 0f);
+            glass.rotation = Quaternion.LookRotation(forward, up);
 
             Vector3 scale = glass.localScale;
             scale.x = direction.magnitude;
@@ -335,7 +345,7 @@ public class GlassCarryManager : MonoBehaviour
         if (forward.sqrMagnitude < 0.001f) forward = Vector3.forward;
         Vector3 up = Vector3.Cross(forward, right).normalized;
 
-        targetGlassRotation = Quaternion.LookRotation(forward, up) * Quaternion.Euler(0f, 90f, 0f);
+        targetGlassRotation = Quaternion.LookRotation(forward, up);
 
         float distToTarget = Vector3.Distance(glass.position, targetPos);
         if (distToTarget > glassDeadZone)
@@ -445,5 +455,29 @@ public class GlassCarryManager : MonoBehaviour
         glass = null;
 
         isBreaking = false;
+    }
+    public enum PlayerSide { A, B }
+
+    /// <summary>
+    /// Returns the world position of the grip point on the glass.
+    /// This is a FIXED local point on the glass's mesh, not recomputed from scale.
+    /// </summary>
+    public Vector3 GetGripPointForSide(PlayerSide side)
+    {
+        if (glass == null) return Vector3.zero;
+
+        // The grip is at the end of the glass's local X axis
+        // localScale.x is the length, so half of it is the edge
+        float halfLength = glass.localScale.x * 0.5f;
+
+        // Use the glass's actual right axis (local X in world space)
+        Vector3 rightAxis = glass.right;
+
+        // Side A is at local -X, Side B is at local +X
+        Vector3 localOffset = side == PlayerSide.A
+            ? -rightAxis * halfLength
+            : rightAxis * halfLength;
+
+        return glass.position + localOffset;
     }
 }

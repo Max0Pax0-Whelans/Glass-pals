@@ -2175,6 +2175,7 @@ MonoBehaviour:
   heightReturnSpeed: 2
   playerA: {fileID: 869447598}
   playerB: {fileID: 701524001}
+  maxSlotSpread: 2.5
   glass: {fileID: 811670750}
   carryHeightOffset: 1.25
   forwardOffset: 0.4
